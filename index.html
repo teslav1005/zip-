@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Afnan AI</title>
+    <!-- استدعاء خط عربي أنيق لتطابق التصميم -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --gray-light: #f4f4f4;
+            --gray-medium: #d4d4d4;
+            --gray-text: #999999;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: transparent;
+        }
+
+        .login-btn {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .menu-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .menu-line {
+            height: 2px;
+            background-color: #000;
+            border-radius: 2px;
+        }
+
+        .menu-line.long { width: 20px; }
+        .menu-line.short { width: 14px; }
+
+        /* Main Chat Area */
+        .main-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #messagesContainer {
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+            z-index: 2;
+        }
+
+        /* Hide empty state automatically when messages are added */
+        #messagesContainer:not(:empty) + #emptyState {
+            display: none;
+        }
+
+        /* Empty State Styles */
+        .empty-state {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .empty-state .logo {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 12px;
+            color: var(--gray-medium);
+        }
+
+        .empty-state h1 {
+            color: var(--gray-medium);
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Input Area Styles */
+        .input-area {
+            padding: 10px 20px 24px;
+            background-color: var(--bg-color);
+            z-index: 3;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            background-color: var(--gray-light);
+            border-radius: 999px;
+            padding: 8px 8px 8px 16px;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-text);
+        }
+
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        #chatInput {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 15px;
+            color: #000;
+        }
+
+        #chatInput::placeholder {
+            color: var(--gray-text);
+        }
+
+        .send-btn {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .send-btn:disabled {
+            background-color: var(--gray-medium);
+            cursor: not-allowed;
+        }
+
+        .send-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Messages Styling (For JS Dynamic Classes) */
+        .message {
+            display: flex;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+
+        .message.user {
+            justify-content: flex-start; /* RTL: Aligns to the right */
+        }
+
+        .message.assistant {
+            justify-content: flex-end; /* RTL: Aligns to the left */
+        }
+
+        .message-content {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background-color: var(--gray-light);
+            color: var(--text-color);
+            border-top-right-radius: 4px;
+        }
+
+        .message.assistant .message-content {
+            background-color: transparent;
+            color: var(--text-color);
+            padding: 10px 0;
+        }
+
+        /* Loading Dots Animation */
+        .loading .message-content {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 24px;
+        }
+
+        .loading-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--gray-medium);
+            border-radius: 50%;
+            animation: pulse 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* Mobile Adjustments */
+        @media (max-width: 480px) {
+            .message-content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <button class="login-btn">تسجيل الدخول</button>
+        <button class="menu-btn">
+            <div class="menu-line long"></div>
+            <div class="menu-line short"></div>
+        </button>
+    </header>
+
+    <!-- Main Chat Area -->
+    <div class="main-wrapper">
+        <div id="messagesContainer"></div>
+        
+        <!-- Empty State (Hidden automatically by CSS when messages are added) -->
+        <div id="emptyState" class="empty-state">
+            <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Custom infinity style logo matching the image -->
+                <path d="M8 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8zm12 0a4 4 0 1 0 0 8 4 4 0 1 0 0-8zm-8 4h.01"/>
+                <path d="M12 12c-2-2-2-2-4-4"/>
+                <path d="M12 12c2-2 2-2 4-4"/>
+            </svg>
+            <h1>Afnan ai</h1>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+        <div class="input-wrapper">
+            <!-- Plus Icon (Right side in RTL) -->
+            <button class="icon-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+
+            <!-- Text Input -->
+            <input type="text" id="chatInput" placeholder="اسأل Afnan ai..." autocomplete="off">
+
+            <!-- Github Icon -->
+            <button class="icon-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                </svg>
+            </button>
+
+            <!-- Send Button -->
+            <button id="sendBtn" class="send-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== YOUR EXACT JAVASCRIPT CODE - NO CHANGES ===== -->
+    <script>
+// Configuration
+const BACKEND_URL = 'https://am-brown.vercel.app';
+const API_ENDPOINT = `${BACKEND_URL}/api/index`;
+
+// DOM Elements
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+const messagesContainer = document.getElementById('messagesContainer');
+
+// State
+let isLoading = false;
+let messageHistory = [];
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    chatInput.addEventListener('keypress', handleKeyPress);
+    sendBtn.addEventListener('click', sendMessage);
+});
+
+// Handle Enter key
+function handleKeyPress(e) {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
+        e.preventDefault();
+        sendMessage();
+    }
+}
+
+// Send message
+async function sendMessage() {
+    const message = chatInput.value.trim();
+    
+    if (!message || isLoading) return;
+
+    // Disable input
+    isLoading = true;
+    sendBtn.disabled = true;
+    chatInput.disabled = true;
+
+    // Add user message to UI
+    addMessageToUI(message, 'user');
+    messageHistory.push({ role: 'user', content: message });
+
+    // Clear input
+    chatInput.value = '';
+
+    // Show loading indicator
+    const loadingMessageId = addLoadingMessage();
+
+    try {
+        // Prepare request
+        const requestBody = {
+            model: 'afnanpro',
+            messages: messageHistory
+        };
+
+        // Send request with streaming
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Origin': window.location.origin
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // Remove loading message
+        removeLoadingMessage(loadingMessageId);
+
+        // Process streaming response
+        await processStreamingResponse(response);
+
+    } catch (error) {
+        console.error('Error:', error);
+        removeLoadingMessage(loadingMessageId);
+        addMessageToUI(`خطأ: ${error.message}`, 'assistant');
+    } finally {
+        // Re-enable input
+        isLoading = false;
+        sendBtn.disabled = false;
+        chatInput.disabled = false;
+        chatInput.focus();
+    }
+}
+
+// Process streaming response (SSE format)
+async function processStreamingResponse(response) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullMessage = '';
+    let currentMessageElement = null;
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+
+                // Parse SSE format
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        
+                        // Extract token from OpenAI-compatible format
+                        if (data.choices && data.choices[0] && data.choices[0].delta) {
+                            const delta = data.choices[0].delta;
+                            
+                            if (delta.content) {
+                                fullMessage += delta.content;
+                                
+                                // Create or update message element
+                                if (!currentMessageElement) {
+                                    currentMessageElement = addMessageToUI('', 'assistant');
+                                }
+                                
+                                // Update message content
+                                const contentElement = currentMessageElement.querySelector('.message-content');
+                                contentElement.textContent = fullMessage;
+                                
+                                // Auto-scroll to bottom
+                                scrollToBottom();
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore JSON parse errors for non-JSON lines
+                    }
+                }
+            }
+        }
+
+        // Add final message to history
+        if (fullMessage) {
+            messageHistory.push({ role: 'assistant', content: fullMessage });
+        }
+
+    } catch (error) {
+        console.error('Streaming error:', error);
+        throw error;
+    }
+}
+
+// Add message to UI
+function addMessageToUI(content, role) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${role}`;
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.textContent = content;
+    
+    messageDiv.appendChild(contentDiv);
+    messagesContainer.appendChild(messageDiv);
+    
+    scrollToBottom();
+    return messageDiv;
+}
+
+// Add loading indicator
+function addLoadingMessage() {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message assistant loading';
+    messageDiv.id = `loading-${Date.now()}`;
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    
+    for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'loading-dot';
+        contentDiv.appendChild(dot);
+    }
+    
+    messageDiv.appendChild(contentDiv);
+    messagesContainer.appendChild(messageDiv);
+    
+    scrollToBottom();
+    return messageDiv.id;
+}
+
+// Remove loading message
+function removeLoadingMessage(id) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.remove();
+    }
+}
+
+// Scroll to bottom
+function scrollToBottom() {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Handle errors gracefully
+window.addEventListener('error', (e) => {
+    console.error('Global error:', e.error);
+});
+
+// Prevent accidental page unload during message sending
+window.addEventListener('beforeunload', (e) => {
+    if (isLoading) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+    </script>
+</body>
+</html>
